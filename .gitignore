@@ -1,0 +1,16 @@
+bin/
+obj/
+
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+Users.API/appsettings.Development.json 
+Users.API/appsettings.json        
+Users.API/Properties/launchSettings.json
+.env
+*.env
+
+Thumbs.db
