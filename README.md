@@ -1,5 +1,6 @@
 User Management Web API
-- User CRUD endpoints
+
+\- User CRUD endpoints
 
 \- JWT authentication
 
