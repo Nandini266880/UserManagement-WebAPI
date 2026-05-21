@@ -1,29 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 using Users.Domain.Enums;
 
 namespace Users.Domain.Entities
 {
+    /// <summary>Represents a registered user in the system.</summary>
     public class User
     {
-        [Key]
+        /// <summary>Unique identifier of the user.</summary>
         public Guid Id { get; set; }
+
+        /// <summary>Full name of the user.</summary>
         public string FullName { get; set; } = string.Empty;
 
-        [EmailAddress, Required, MaxLength(50)]
-        public string Email { get; set; }
+        /// <summary>Unique email address used for authentication.</summary>
+        public string Email { get; set; } = string.Empty;
 
-        [Required, MaxLength(500)]
-        public string PasswordHash { get; set; }
+        /// <summary>Bcrypt-hashed password. Never store plain text.</summary>
+        public string PasswordHash { get; set; } = string.Empty;
 
+        /// <summary>Role assigned to the user. Defaults to Visitor.</summary>
         public UserRole Role { get; set; } = UserRole.Visitor;
+
+        /// <summary>Indicates whether the user account is active.</summary>
         public bool IsActive { get; set; } = true;
+
+        /// <summary>UTC timestamp when the user was created.</summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; } = null;
+
+        /// <summary>UTC timestamp of the last update. Null if never updated.</summary>
+        public DateTime? UpdatedAt { get; set; }
     }
 }

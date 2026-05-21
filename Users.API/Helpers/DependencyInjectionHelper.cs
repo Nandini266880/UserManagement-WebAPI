@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text;
 using Users.API.Helpers;
-using Users.Application.Models;
 using Users.Application.Interfaces;
+using Users.Application.Models;
 using Users.Application.Services;
 using Users.Infrastructure.Data;
 using Users.Infrastructure.JwtServices;
@@ -16,6 +19,12 @@ namespace Users.Api.Helpers
 {
     public static class DependencyInjectionHelper
     {
+        /// <summary>
+        /// Customized Dependency Injection helper for program.cs
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="configuration"></param>
+        /// <returns></returns>
         public static IServiceCollection AddCustomDI(this IServiceCollection services, IConfiguration configuration)
         {
             #region DB Connection
@@ -25,6 +34,8 @@ namespace Users.Api.Helpers
 
             #region Dependency Injections
 
+            services.AddScoped<CustomFluentValidationResultFactory>();
+            services.AddScoped<ValidateGuidFilter>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserService, UserService>();
@@ -57,6 +68,61 @@ namespace Users.Api.Helpers
             services.AddAuthorization();
             #endregion
 
+            #region API Version
+
+            services.AddApiVersioning(options =>
+            {
+                options.DefaultApiVersion = new ApiVersion(1, 0);
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.ReportApiVersions = true;
+                options.ApiVersionReader = new UrlSegmentApiVersionReader();
+            })
+            .AddApiExplorer(options =>
+            {
+                options.GroupNameFormat = "'v'VVV";
+                options.SubstituteApiVersionInUrl = true;
+            });
+
+            #endregion
+
+            #region Swagger Configurations 
+
+            services.AddSwaggerGen(options =>
+            {
+                // Adding Xml Comments 
+                var presentationXml = Path.Combine(AppContext.BaseDirectory, "Users.API.xml");
+                if(File.Exists(presentationXml))
+                    options.IncludeXmlComments(presentationXml);
+
+                var applicationXml = Path.Combine(AppContext.BaseDirectory, "Users.Application.xml");
+                if(File.Exists(applicationXml))
+                    options.IncludeXmlComments(applicationXml);
+
+                // JWT configuration 
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "Bearer",
+                    BearerFormat = "JWT",
+                    In = ParameterLocation.Header,
+                    Description = "Enter: Bearer {your-token}"
+                });
+
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+            });
+
+            #endregion
+
             #region Override [ApiController]'s built in 400 response factory
 
             services.Configure<ApiBehaviorOptions>(options =>
@@ -71,15 +137,9 @@ namespace Users.Api.Helpers
                                 Field = kvp.Key,
                                 Message = string.IsNullOrWhiteSpace(e.ErrorMessage) ? "Invalid value" : e.ErrorMessage,
                             })
-                        ).ToList();
+                        );
 
-                    var problemDetail = new ProblemDetail
-                    {
-                        Title = "Validation errors",
-                        Status = StatusCodes.Status400BadRequest,
-                        Instance = context.HttpContext.Request.Path,
-                        Errors = errors
-                    };
+                    var problemDetail = ValidationErrorHelper.BuildProblemDetail(errors, context.HttpContext.Request.Path);
 
                     return new BadRequestObjectResult(problemDetail);
                 };

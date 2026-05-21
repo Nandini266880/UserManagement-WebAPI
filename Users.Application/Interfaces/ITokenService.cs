@@ -4,6 +4,6 @@ namespace Users.Application.Interfaces
 {
     public interface ITokenService
     {
-        Task<string> GetJWTAccessToken(User user);
+        Task<string> GetJWTAccessToken(User user, CancellationToken cancellationToken);
     }
 }

@@ -1,7 +1,12 @@
+using Asp.Versioning.ApiExplorer;
 using FluentValidation;
-using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.Options;
 using Serilog;
+using SharpGrip.FluentValidation.AutoValidation.Mvc.Enums;
+using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using Users.Api.Helpers;
+using Users.API.Helpers;
 using Users.Application.Validations;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,45 +27,17 @@ builder.Services.AddHttpContextAccessor();
 
 // Add services to the container.
 builder.Services.AddCustomDI(builder.Configuration);
+builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
 
-builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
-//builder.Services.AddValidatorsFromAssemblyContaining<CreateUserRequestValidator>();
-//builder.Services.AddValidatorsFromAssemblyContaining<UpdateUserRequestValidator>();
-
-#region Swagger with JWT support
-
-builder.Services.AddSwaggerGen(options =>
+//Scanning assembly once - adds all validators to models
+builder.Services.AddFluentValidationAutoValidation(config =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "User Management API",
-        Version = "1.0.0",
-        Description = ".NET 9 Web API with JWT auth"
-    });
-
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Enter: Bearer {your-token}"
-    });
-
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-            },
-            Array.Empty<string>()
-        }
-    });
+    config.DisableBuiltInModelValidation = true;
+    config.ValidationStrategy = ValidationStrategy.All;
+    config.OverrideDefaultResultFactoryWith<CustomFluentValidationResultFactory>();
 });
 
-#endregion
+builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
 
 var app = builder.Build();
 
@@ -68,7 +45,18 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        // Dynamically build Swagger endpoints for every registered API version
+        var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+
+        foreach (var description in provider.ApiVersionDescriptions)
+        {
+            options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json",
+                $"Users API {description.GroupName.ToUpperInvariant()}"
+            );
+        }
+    });
 }
 
 app.UseExceptionHandler();

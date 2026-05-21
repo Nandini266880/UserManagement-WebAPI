@@ -1,15 +1,20 @@
-﻿using FluentValidation;
+﻿using Asp.Versioning;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Users.Application.Interfaces;
 using Users.Application.Models;
+using Users.Application.Utility;
 
-namespace Users.Api.Controllers
+namespace Users.API.Controllers
 {
 
-    // POST api/v1/auth/login
+    // POST api/{version}/auth/login
 
+    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
+    [Route("/api/v{version:apiVersion}/[controller]")]
     [ApiController]
-    [Route("/api/v1/auth")]
     public class AuthController : ControllerBase
     {
         #region Private Members
@@ -33,39 +38,36 @@ namespace Users.Api.Controllers
         /// <summary>
         /// Authenticates a user and returns a signed JWT token.
         /// </summary>
-        /// <param name="request">Login credentials.</param>
+        /// <param name="request"></param>
+        /// <param name="cancellationToken"></param>
         /// <returns>JWT token and expiry on success.</returns>
-        /// <response code="200">Login successful — JWT returned.</response>
+        /// <response code="200">Login successful - JWT returned.</response>
         /// <response code="400">Request format invalid (validation failed).</response>
         /// <response code="401">Credentials do not match.</response>
         /// <response code="404">User not found.</response>
 
         [HttpPost("login")]
-        public async Task<ActionResult<LoginResponseModel>> Login([FromBody] LoginRequestModel request)
+        public async Task<ActionResult<LoginResponseModel>> Login([FromBody] LoginRequestModel request, CancellationToken cancellationToken)
         {
-            var validation = await _loginValidator.ValidateAsync(request);
-            if (!validation.IsValid)
-            {
-                _logger.LogError("Login Validation: Couldn't login User {Email} and {Validation}", request.Email, validation.Errors.ToString());
-                throw new ValidationException(validation.Errors);
-            }
 
-            var user = await _userService.GetUserByFuncExpression(u => u.Email.Equals(request.Email));
+            var user = await _userService.GetUserByFuncExpression(u => u.Email.Equals(request.Email), cancellationToken);
             if(user is null)
             {
                 _logger.LogWarning("Login: An unknown user attempt for login.");
                 return NotFound("User not found. Kindly check your credentials.");
             }
 
-            var isPasswordValid = !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
-            if (isPasswordValid)
+            var isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
+            if (!isPasswordValid)
             {
-                _logger.LogError("Login: User {Email} attempt login with invalid password", request.Email);
+                var maskedEmail = LogMaskHelper.MaskEmail(request.Email);
+
+                _logger.LogError("Login: Attempt login using {Email} with invalid password", maskedEmail);
                 return Unauthorized("Invalid credentials");
             }
 
-            _logger.LogInformation("User {Email} logged in successfully", request.Email);
-            var accessToken = await _tokenService.GetJWTAccessToken(user);
+            _logger.LogInformation("User logged in successfully");
+            var accessToken = await _tokenService.GetJWTAccessToken(user, cancellationToken);
 
             return Ok(new LoginResponseModel
             {

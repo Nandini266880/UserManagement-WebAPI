@@ -29,10 +29,10 @@ namespace UsersApi.Tests.Services
         {
             var request = new CreateUserRequestModel { FullName = "test user4", Email = "user4@gmail.com", Password = "user@4" };
 
-            _userRepositoryMock.Setup(u => u.GetUserByFuncExpression(It.IsAny<Expression<Func<User, bool>>>()))
+            _userRepositoryMock.Setup(u => u.GetUserByFuncExpression(It.IsAny<Expression<Func<User, bool>>>(), CancellationToken.None))
                 .ReturnsAsync((User?)null);
 
-            var result = await _sut.CreateUserAsync(request);
+            var result = await _sut.CreateUserAsync(request, CancellationToken.None);
             Assert.NotNull(result);
             Assert.Equal(request.FullName, result.FullName);
         }
@@ -43,10 +43,10 @@ namespace UsersApi.Tests.Services
             var request = new CreateUserRequestModel { FullName = "test user5", Email = "user5@gmail.com", Password = "user@5" };
             var existing = new User { Id = Guid.NewGuid(), FullName = "test user5", Email = "user5@gmail.com" };
 
-            _userRepositoryMock.Setup(u => u.GetUserByFuncExpression(It.IsAny<Expression<Func<User, bool>>>()))
+            _userRepositoryMock.Setup(u => u.GetUserByFuncExpression(It.IsAny<Expression<Func<User, bool>>>(), CancellationToken.None))
                 .ReturnsAsync(existing);
 
-            await Assert.ThrowsAsync<ConflictException>(() => _sut.CreateUserAsync(request));
+            await Assert.ThrowsAsync<ConflictException>(() => _sut.CreateUserAsync(request, CancellationToken.None));
         }
 
         [Fact]
@@ -55,11 +55,11 @@ namespace UsersApi.Tests.Services
             var request = new CreateUserRequestModel { FullName = "test user6", Email = "user6@gmail.com", Password = "user@6" };
             var existing = new User { Id = Guid.NewGuid(), FullName = "test user6", Email = "user6@gmail.com" };
 
-            _userRepositoryMock.Setup(u => u.GetUserByFuncExpression(It.IsAny<Expression<Func<User, bool>>>()))
+            _userRepositoryMock.Setup(u => u.GetUserByFuncExpression(It.IsAny<Expression<Func<User, bool>>>(), CancellationToken.None))
                 .ReturnsAsync((User?)null);
-            _userRepositoryMock.Setup(u => u.CreateUserAsync(existing));
+            _userRepositoryMock.Setup(u => u.CreateUserAsync(existing, CancellationToken.None));
 
-            var result = await _sut.CreateUserAsync(request);
+            var result = await _sut.CreateUserAsync(request, CancellationToken.None);
 
             Assert.NotNull(result);
             Assert.IsType<UserResponseModel>(result);
@@ -74,10 +74,10 @@ namespace UsersApi.Tests.Services
                 new() { Id = Guid.NewGuid(), FullName = "test user5", Email = "user5@gmail.com" },
             };
 
-            _userRepositoryMock.Setup(u => u.GetAllUsersAsync())
+            _userRepositoryMock.Setup(u => u.GetAllUsersAsync(CancellationToken.None))
                 .ReturnsAsync(data);
 
-            var result = await _sut.GetAllUsersAsync();
+            var result = await _sut.GetAllUsersAsync(CancellationToken.None);
             Assert.NotNull(result);
             Assert.Equal(2, result.Count());
         }
@@ -93,10 +93,10 @@ namespace UsersApi.Tests.Services
                 new() { Id = Guid.NewGuid(), FullName = "test user3", Email = "user3@gmail.com" },
             };
 
-            _userRepositoryMock.Setup(u => u.GetUserByIdAsync(userId))
+            _userRepositoryMock.Setup(u => u.GetUserByIdAsync(userId, CancellationToken.None))
                 .ReturnsAsync(currentData.FirstOrDefault(u => u.Id == userId));
 
-            await Assert.ThrowsAsync<NotFoundException>(() => _sut.GetUserByIdAsync(userId));
+            await Assert.ThrowsAsync<NotFoundException>(() => _sut.GetUserByIdAsync(userId, CancellationToken.None));
         }
 
         [Fact]
@@ -109,10 +109,10 @@ namespace UsersApi.Tests.Services
                 new() { Id = new Guid("715A3852-723B-4B9F-952D-515879D929E2"), FullName = "test user5", Email = "user5@gmail.com" },
             };
 
-            _userRepositoryMock.Setup(u => u.GetUserByIdAsync(userId))
+            _userRepositoryMock.Setup(u => u.GetUserByIdAsync(userId, CancellationToken.None))
                 .ReturnsAsync(currentData.FirstOrDefault(u => u.Id == userId));
 
-            var result = await _sut.GetUserByIdAsync(userId);
+            var result = await _sut.GetUserByIdAsync(userId, CancellationToken.None);
             Assert.NotNull(result);
             Assert.Equal(userId, result.Id);
         }
@@ -123,10 +123,10 @@ namespace UsersApi.Tests.Services
             var userId = Guid.NewGuid();
             var request = new UpdateUserRequestModel { FullName = "nandini", Email = "nandini@gmail.com", Password = "nandini@123" };
 
-            _userRepositoryMock.Setup(u => u.GetUserByIdAsync(userId))
+            _userRepositoryMock.Setup(u => u.GetUserByIdAsync(userId, CancellationToken.None))
                 .ReturnsAsync((User?)null);
 
-            await Assert.ThrowsAsync<NotFoundException>(() => _sut.UpdateUserAsync(userId, request));
+            await Assert.ThrowsAsync<NotFoundException>(() => _sut.UpdateUserAsync(userId, request, CancellationToken.None));
         }
 
 
@@ -139,13 +139,13 @@ namespace UsersApi.Tests.Services
             var existingUser = new User { Id = userId, FullName = "test user5", Email = "user5@gmail.com" };
             var anotherUser = new User { Id=Guid.NewGuid(), FullName = "test user63", Email = "user63@gmail.com" };
 
-            _userRepositoryMock.Setup(u => u.GetUserByIdAsync(userId))
+            _userRepositoryMock.Setup(u => u.GetUserByIdAsync(userId, CancellationToken.None))
                 .ReturnsAsync(existingUser);
 
-            _userRepositoryMock.Setup(u => u.GetUserByFuncExpression(It.IsAny<Expression<Func<User, bool>>>()))
+            _userRepositoryMock.Setup(u => u.GetUserByFuncExpression(It.IsAny<Expression<Func<User, bool>>>(), CancellationToken.None))
                     .ReturnsAsync(anotherUser);
 
-            await Assert.ThrowsAsync<ConflictException>(() => _sut.UpdateUserAsync(userId, request));
+            await Assert.ThrowsAsync<ConflictException>(() => _sut.UpdateUserAsync(userId, request, CancellationToken.None));
            
         }
 
@@ -162,18 +162,20 @@ namespace UsersApi.Tests.Services
                 Password = ""
             };
 
-            _userRepositoryMock.Setup(u => u.GetUserByIdAsync(userId))
+            _userRepositoryMock.Setup(u => u.GetUserByIdAsync(userId, CancellationToken.None))
                .ReturnsAsync(existingUser);
 
-            _userRepositoryMock.Setup(u => u.GetUserByFuncExpression(It.IsAny<Expression<Func<User, bool>>>()))
+            _userRepositoryMock.Setup(u => u.GetUserByFuncExpression(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((User?)null);
 
-            _userRepositoryMock.Setup(u => u.UpdateUserAsync(It.IsAny<User>()))
-                .ReturnsAsync((User user) => user);
+            _userRepositoryMock.Setup(u => u.UpdateUserAsync(
+                    It.IsAny<User>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(existingUser); 
 
-            var result = await _sut.UpdateUserAsync(userId, request);
+
+            var result = await _sut.UpdateUserAsync(userId, request, CancellationToken.None);
             Assert.NotNull(result);
-            Assert.Equal(result.FullName, existingUser.FullName);
+            Assert.Equal(result.FullName, request.FullName);
         }
 
         [Theory]
@@ -181,12 +183,12 @@ namespace UsersApi.Tests.Services
         [InlineData("87DBF287-FD66-4EA7-862C-5E27CB35C322")]
         public async Task DeleteUser_ShouldThrowNotFoundException_WhenUserDoesNotExist(Guid userId)
         {
-            _userRepositoryMock.Setup(u => u.GetUserByFuncExpression(It.IsAny<Expression<Func<User, bool>>>()))
+            _userRepositoryMock.Setup(u => u.GetUserByFuncExpression(It.IsAny<Expression<Func<User, bool>>>(), CancellationToken.None))
                 .ReturnsAsync((User?)null);
 
-            await Assert.ThrowsAsync<NotFoundException>(() => _sut.DeleteUserAsync(userId));
+            await Assert.ThrowsAsync<NotFoundException>(() => _sut.DeleteUserAsync(userId, CancellationToken.None));
 
-            _userRepositoryMock.Verify(x => x.DeleteUserAsync(userId), Times.Never);
+            _userRepositoryMock.Verify(x => x.DeleteUserAsync(userId, CancellationToken.None), Times.Never);
         }
 
         [Fact]
@@ -195,13 +197,13 @@ namespace UsersApi.Tests.Services
             Guid userId = Guid.NewGuid();
             var user = new User { Id = userId, FullName = "test user4", Email = "user4@gmail.com" };
 
-            _userRepositoryMock.Setup(u => u.GetUserByFuncExpression(It.IsAny<Expression<Func<User, bool>>>()))
+            _userRepositoryMock.Setup(u => u.GetUserByFuncExpression(It.IsAny<Expression<Func<User, bool>>>(), CancellationToken.None))
                 .ReturnsAsync(user);
 
-            _userRepositoryMock.Setup(u => u.DeleteUserAsync(userId));
+            _userRepositoryMock.Setup(u => u.DeleteUserAsync(userId, CancellationToken.None));
 
-            await _sut.DeleteUserAsync(userId);
-            _userRepositoryMock.Verify(x => x.DeleteUserAsync(userId), Times.Once());
+            await _sut.DeleteUserAsync(userId, CancellationToken.None);
+            _userRepositoryMock.Verify(x => x.DeleteUserAsync(userId, CancellationToken.None), Times.Once());
         }
 
     }

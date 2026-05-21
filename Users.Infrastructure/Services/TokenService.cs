@@ -5,6 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Users.Application.Interfaces;
+using Users.Application.Utility;
 using Users.Domain.Entities;
 
 namespace Users.Infrastructure.JwtServices
@@ -24,10 +25,12 @@ namespace Users.Infrastructure.JwtServices
         /// </summary>
         /// <param name="user">User entity to include in the token claims.</param>
         /// <returns>A signed JWT access token string.</returns>
-        public async Task<string> GetJWTAccessToken(User user)
+        public async Task<string> GetJWTAccessToken(User user, CancellationToken cancellationToken)
         {
             int expiryMinutes = Convert.ToInt32(_configuration["JwtConfig:DurationInMinutes"]);
             string secretKey = _configuration["JwtConfig:Key"];
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(secretKey);
@@ -49,7 +52,9 @@ namespace Users.Infrastructure.JwtServices
             var createdToken = tokenHandler.CreateToken(tokenDescriptor);
             var token = tokenHandler.WriteToken(createdToken);
 
-            _logger.LogInformation("JWT created for User {Email}", user.Email);
+            var maskedEmail = LogMaskHelper.MaskEmail(user.Email);
+
+            _logger.LogInformation("JWT created for User {Email}", maskedEmail);
             return token;
         }
     }
