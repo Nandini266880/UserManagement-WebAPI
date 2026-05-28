@@ -1,7 +1,10 @@
-﻿namespace Users.Application.Utility
+﻿using Users.Application.Services;
+
+namespace Users.Application.Utility
 {
     public static class LogMaskHelper
     {
+
         public static string MaskEmail(string email)
         {
             if (string.IsNullOrWhiteSpace(email))

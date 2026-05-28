@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Users.Application.Interfaces;
 using Users.Application.Models;
 using Users.Application.Utility;
+using Users.Application.Validations;
 
 namespace Users.API.Controllers
 {

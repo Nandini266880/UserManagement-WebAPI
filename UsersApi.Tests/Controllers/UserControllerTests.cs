@@ -151,7 +151,7 @@ namespace UsersApi.Tests.Controllers
             var created = Assert.IsType<CreatedAtActionResult>(result.Result);
             Assert.Equal(201, created.StatusCode);
 
-            var returned = Assert.IsAssignableFrom<UserResponseModel>(created.Value);
+            var returned = Assert.IsType<UserResponseModel>(created.Value);
             Assert.Equal(request.FullName, returned.FullName);
         }
 

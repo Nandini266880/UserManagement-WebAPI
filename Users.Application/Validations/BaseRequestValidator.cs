@@ -4,8 +4,9 @@ using System.Text.RegularExpressions;
 
 namespace Users.Application.Validations
 {
-    public abstract class BaseRequestValidator<T> : AbstractValidator<T> where T: class
+    public class BaseRequestValidator<T> : AbstractValidator<T> where T: class
     {
+        protected internal int data = 23;
         /// <summary>
         /// Full name rules
         /// </summary>

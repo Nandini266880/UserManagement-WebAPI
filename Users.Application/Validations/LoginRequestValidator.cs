@@ -7,6 +7,7 @@ namespace Users.Application.Validations
     {
         public LoginRequestValidator()
         {
+            Console.WriteLine(data);
             AddEmailRules(x => x.Email);
             AddPasswordRules(x => x.Password);
         }
